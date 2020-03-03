@@ -1,12 +1,15 @@
 include("fractal_border.jl")
 using Plots
+plotly()
 
 function get_grid()
-    l = 3
+    l = 5
     # int: extra resolution
-    r = 4
+    r = 2
     # lattice constant
     a = 1 / 4^l / r
+
+    print("Start \n")
     fractal_border = get_koch_curve(l)
     # fractral is sym. => no need to check y-vals
     range = [min(fractal_border[1,:]...), max(fractal_border[1,:]...)]
@@ -37,6 +40,8 @@ function get_grid()
     end
 
     fill_fractal_border!(grid, fractal_border)
+    print("Done \n")
+
     index = CartesianIndex(ceil(Int, N / 2), ceil(Int, N / 2))
     # TODO: breadth-first search, which colors all points inside fractal true
 
