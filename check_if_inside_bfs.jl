@@ -1,6 +1,6 @@
 include("fractal_border.jl")
 using Plots
-plotly()
+
 
 function get_grid()
     l = 5
