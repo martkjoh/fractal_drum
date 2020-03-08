@@ -1,29 +1,32 @@
 include("fractal_border.jl")
-using Plots
+using DataStructures
+
+# Tired of writing
+const indx = CartesianIndex
 
 
 function get_grid()
-    l = 5
+    l = 3
     # int: extra resolution
     r = 2
     # lattice constant
     a = 1 / 4^l / r
 
-    print("Start \n")
+    print("Making fractal\n")
     fractal_border = get_koch_curve(l)
     # fractral is sym. => no need to check y-vals
-    range = [min(fractal_border[1,:]...), max(fractal_border[1,:]...)]
+    range = [min(fractal_border[1,:]...) - a, max(fractal_border[1,:]...) + a]
     N = Int(ceil((range[2] - range[1]) / a)) + 1
-    grid = reshape([false for i=1:N^2], (N, N))
+    grid = reshape([0 for i=1:N^2], (N, N))
 
     function get_index(point)
-        return CartesianIndex(
+        return indx(
             round(Int, (point[2] - range[1])/a + 1),
             round(Int, (point[1] - range[1])/a + 1))
     end
     
     function divide_index(index, r)
-        return CartesianIndex(round(Int, index[1] / r), round(Int, index[2] / r))
+        return indx(round(Int, index[1] / r), round(Int, index[2] / r))
     end
 
     function fill_fractal_border!(grid, fractal_border)
@@ -33,23 +36,29 @@ function get_grid()
             step = divide_index(new_corner - old_corner, r)
             for j=1:r
                 index = old_corner + step * (j - 1)
-                grid[index] = true
+                grid[index] = 1
             end
             old_corner = new_corner
         end
     end
 
+    function flood_fill!(grid)
+        index_around = [indx(1, 0), indx(0, 1), indx(-1, 0), indx(0, -1)]
+        queue = Queue{indx}()
+        enqueue!(queue, indx(ceil(Int, N / 2), ceil(Int, N / 2)))
+        while !isempty(queue)
+            current = dequeue!(queue)
+            if grid[current] == 0
+                grid[current] = 1
+                for i in index_around
+                    index = current + i
+                    enqueue!(queue, index)
+        end end end end
+
+    print("Filling grid \n")
+    print("N = ", N, "\n")
     fill_fractal_border!(grid, fractal_border)
-    print("Done \n")
+    flood_fill!(grid)
 
-    index = CartesianIndex(ceil(Int, N / 2), ceil(Int, N / 2))
-    # TODO: breadth-first search, which colors all points inside fractal true
-
-    x = LinRange(range[1], range[2], N)
-    y = LinRange(range[1], range[2], N)
-    heatmap(x, y, grid)
-    plot!(fractal_border[1, :], fractal_border[2, :])
-    plot!(show = true)
+    return grid, range
 end
-
-get_grid()
