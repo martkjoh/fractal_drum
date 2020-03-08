@@ -26,10 +26,11 @@ function get_laplacian()
             p0 = indx(n+1+k, n+1+l) # where the point is in the stencil
             p1 = indx(k, l) # Where the point is in grid, relative point i
             if stencil[p0] != 0
-                current = findfirst(isequal(a + p1), u_indecies)
+                search_range = max(1, i-N):min(i+N, num_points)
+                current = findfirst(isequal(a + p1), u_indecies[search_range])
                 if current != nothing
                     m += 1
-                    I[m] = current
+                    I[m] = current + search_range[1] - 1
                     J[m] = i
                     V[m] = stencil[p0]
     end end end end
