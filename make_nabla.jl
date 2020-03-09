@@ -29,11 +29,11 @@ function get_laplacian(grid)
     num_points = size(vec_indx)[1]
     N = size(grid)[1]
     
-    stencil = [[0, -1., 0] [-1, 2., -1] [0, -1., 0]]
+    stencil = [[0, 1., 0] [1, -4., 1] [0, 1., 0]]
     n = Int((size(stencil)[1] - 1) / 2)
     I = Array{Int}(undef, (4*n+1)*num_points)
     J = Array{Int}(undef, (4*n+1)*num_points)
-    V = Array{Float32}(undef, (4*n+1)*num_points)
+    V = Array{Float64}(undef, (4*n+1)*num_points)
     m = 0
 
     print("Making laplacian w/ $num_points points\n")
@@ -41,7 +41,6 @@ function get_laplacian(grid)
         a = vec_indx[i]
         for k=-n:n, l=-n:n
             p0 = indx(n+1+k, n+1+l) # where the point is in the stencil
-
             p1 = indx(k, l) # Where the point is in grid, relative point i
             if stencil[p0] != 0
                 search_range = max(1, i-N):min(i+N, num_points)
@@ -65,9 +64,15 @@ function go()
     laplacian, vec_indx = get_laplacian(grid)
 
     print("Finding eigenvals \n")
-    l, a = eigs(laplacian, nev = b)
+    l, a = eigs(laplacian, nev = b, which=:SM)
 
     print("Plotting \n")
+    M = size(laplacian)[1]
+    print(M)
+    heatmap(1:M, 1:M, Matrix(laplacian))
+    plot!(size = (4000, 3000))
+    savefig("asgfasg")
+
     x = LinRange(range[1], range[2], N)
     for i=1:b
         c = vec_to_grid(a[:, i], vec_indx, N)
