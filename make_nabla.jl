@@ -4,64 +4,78 @@ using Plots
 
 include("check_if_inside_bfs.jl")
 
-function get_laplacian()
-
-    grid, r = get_grid()
+# Returns vec of indecies of non-zero elements of grid
+function grid_to_vec(grid)
     N = size(grid)[1]
-    u_indecies = indx[]
-    for i=1:N, j=1:N if grid[j, i] != 0 push!(u_indecies, indx(i, j)) end end
-    num_points = size(u_indecies)[1]
-    I = Array{Int}(undef, 5*num_points)
-    J = Array{Int}(undef, 5*num_points)
-    V = Array{Float32}(undef, 5*num_points)
-    stencil = [[0, 1., 0] [1, -4., 1] [0, 1., 0]]
-    n = Int((size(stencil)[1] - 1) / 2)
-    
-    print("Making laplacian\n")
-    print("points: ", num_points, "\n")
-    m = 0
-    for i=1:num_points
-        a = u_indecies[i]
-        for k=-n:n, l=-n:n
-            p0 = indx(n+1+k, n+1+l) # where the point is in the stencil
-            p1 = indx(k, l) # Where the point is in grid, relative point i
-            if stencil[p0] != 0
-                search_range = max(1, i-N):min(i+N, num_points)
-                current = findfirst(isequal(a + p1), u_indecies[search_range])
-                if current != nothing
-                    m += 1
-                    I[m] = current + search_range[1] - 1
-                    J[m] = i
-                    V[m] = stencil[p0]
-    end end end end
-
-    print("making sparse\n")
-    return sparse(I[1:m], J[1:m], V[1:m], m, m), u_indecies, r
+    vec_indx = indx[]
+    for i=1:N, j=1:N 
+        if grid[i, j] == 1
+            push!(vec_indx, indx(i, j))
+    end end
+    return vec_indx
 end
 
-function recreate_grid(u, u_indecies)
-    N = maximum([i[1] for i in u_indecies])
-    M = size(u_indecies)[1]
+function vec_to_grid(vec, vec_indx, N)
     grid = zeros((N, N))
+    M = size(vec_indx)[1]
     for i = 1:M
-        grid[u_indecies[i]] = u[i]
+        grid[vec_indx[i]] = vec[i]
     end
     return grid
 end
 
-laplacian, u_indecies, r = get_laplacian()
+function get_laplacian(grid)
+    vec_indx = grid_to_vec(grid)
+    num_points = size(vec_indx)[1]
+    N = size(grid)[1]
+    
+    stencil = [[0, -1., 0] [-1, 2., -1] [0, -1., 0]]
+    n = Int((size(stencil)[1] - 1) / 2)
+    I = Array{Int}(undef, (4*n+1)*num_points)
+    J = Array{Int}(undef, (4*n+1)*num_points)
+    V = Array{Float32}(undef, (4*n+1)*num_points)
+    m = 0
 
-print("Finding eigenvals \n")
-b = 5
-l, a = eigs(laplacian, nev = b)
+    print("Making laplacian w/ $num_points points\n")
+    for i=1:num_points
+        a = vec_indx[i]
+        for k=-n:n, l=-n:n
+            p0 = indx(n+1+k, n+1+l) # where the point is in the stencil
 
-print("Plotting \n")
-N = size(recreate_grid(a[:, 1], u_indecies))[1]
-x = LinRange(r[1], r[2], N)
-y = LinRange(r[1], r[2], N)
-
-for i=1:b
-    c = recreate_grid(a[:, i], u_indecies)
-    heatmap(x, y, c)
-    savefig("plot_$i")
+            p1 = indx(k, l) # Where the point is in grid, relative point i
+            if stencil[p0] != 0
+                search_range = max(1, i-N):min(i+N, num_points)
+                current = findfirst(isequal(a + p1), vec_indx[search_range])
+                if current != nothing
+                    m += 1
+                    I[m] = current+search_range[1]-1
+                    J[m] = i
+                    V[m] = stencil[p0]
+    end end end end
+    return sparse(I[1:m], J[1:m], V[1:m]), vec_indx
 end
+
+function go()
+    l = 3
+    b = 5
+
+    print("Making fractal\n")
+    fractal_border = get_koch_curve(l)
+    grid, range, N = get_grid(fractal_border, l, 2)
+    laplacian, vec_indx = get_laplacian(grid)
+
+    print("Finding eigenvals \n")
+    l, a = eigs(laplacian, nev = b)
+
+    print("Plotting \n")
+    x = LinRange(range[1], range[2], N)
+    for i=1:b
+        c = vec_to_grid(a[:, i], vec_indx, N)
+        heatmap(x, x, c)
+        plot!(fractal_border[1, :], fractal_border[2, :], color="black")
+        plot!(size = (4000, 3000))
+        savefig("plot_$i")
+    end
+end
+
+go()
