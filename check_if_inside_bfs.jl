@@ -31,10 +31,12 @@ function flood_fill!(grid, N)
     index_around = [indx(1, 0), indx(0, 1), indx(-1, 0), indx(0, -1)]
     queue = Queue{indx}()
     enqueue!(queue, indx(ceil(Int, N / 2), ceil(Int, N / 2)))
+    m = 1
     while !isempty(queue)
         current = dequeue!(queue)
         if grid[current] == 0
-            grid[current] = 1
+            grid[current] = m
+            m += 1
             for i in index_around
                 index = current + i
                 enqueue!(queue, index)
@@ -48,7 +50,7 @@ function get_grid(fractal_border, l, r=2)
     fractal_border = get_koch_curve(l)
     range = [min(fractal_border[1,:]...) - a, max(fractal_border[1,:]...) + a]
     N = round(Int, (range[2] - range[1]) / a) + 1
-    grid = zeros((N, N))
+    grid = zeros(Int, (N, N))
 
     print("Filling grid \n")
     print("N = ", N, "\n")
