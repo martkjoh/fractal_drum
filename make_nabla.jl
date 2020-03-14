@@ -79,7 +79,7 @@ function go()
         heatmap(x, x, c[1:k:end, 1:k:end], color=:viridis)
         plot!(fractal_border[1, :], fractal_border[2, :], color=:black)
         
-        savefig("figs/plot_$i.pdf")
+        savefig("figs/plot_$i.png")
     end
 end
 
