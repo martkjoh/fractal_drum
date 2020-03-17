@@ -1,6 +1,7 @@
 using SparseArrays
 using Arpack
 using Plots
+pyplot()
 
 include("check_if_inside_bfs.jl")
 
@@ -57,8 +58,8 @@ end
 
 function go()
     l = 4
-    r = 2
-    num_eigenvals = 8
+    r = 3
+    num_eigenvals = 6
 
     print("Making fractal\n")
     fractal_border = get_koch_curve(l)
@@ -71,14 +72,18 @@ function go()
     print("Finding eigenvals \n")
     l, a = eigs(laplacian, nev = num_eigenvals, which=:SM)
     print("Plotting \n")
-    k = Int(floor(N/200))
+    k = Int(floor(N/500)) + 1
     M = Int(ceil(N/k))
     x = LinRange(range[1], range[2], M)
+
     for i=1:num_eigenvals
+        p = []
         c = vec_to_grid(a[:, i], vec_indx, N)
-        heatmap(x, x, c[1:k:end, 1:k:end], color=:viridis)
+        push!(p, heatmap(x, x, c[1:k:end, 1:k:end], color=:viridis, legend=:none))
         plot!(fractal_border[1, :], fractal_border[2, :], color=:black)
-        
+        push!(p, plot(fractal_border[1, :], fractal_border[2, :], zeros(size(fractal_border[1, :])), color=:black))
+        surface!(x, x, c[1:k:end, 1:k:end], color=:viridis, legend=:none, colorbar = :none)
+        plot(p..., size = (800, 250), dpi = 800)
         savefig("figs/plot_$i.png")
     end
 end
